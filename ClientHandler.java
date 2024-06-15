@@ -12,6 +12,16 @@ public class ClientHandler implements Runnable {
   //This is static so the list belongs to the class NOT the object.
   public static ArrayList<ClientHandler> clientHandlers = new ArrayList<>();
 
+  public static ArrayList<String> getAllUsers() {
+    ArrayList<String> allUsers = new ArrayList<String>();
+    
+    for (ClientHandler c : clientHandlers) {
+      allUsers.add(c.getClientUsername());
+    }
+
+    return allUsers;
+  }
+
   private String clientUsername;
 
   //Represents the connection between the Server and ClientHandler
@@ -38,7 +48,10 @@ public class ClientHandler implements Runnable {
         //clientHandles is a static ArrayList belonging to the class, adding 'this', this instance of this object is added to the list.
       clientHandlers.add(this);
 
-      broadcastMessage("SERVER: " + clientUsername + " has entered the chat.");
+      broadcastMessage("[SERVER] " + clientUsername + " has entered the chat.");
+
+      cmdEcho("Connected to the server!");
+      cmdEcho("Type '/help' for a list of commands.");
 
     } catch (IOException e) {
       closeEverything(socket, bufferedReader, bufferedWriter);
@@ -63,6 +76,12 @@ public class ClientHandler implements Runnable {
         if (messageOnly.equals("/leave")) {
           closeEverything(socket, bufferedReader, bufferedWriter);
           break;
+        
+        //Check if user entered a command. If so execute command.
+        } else if (messageOnly.indexOf("/") == 0) {
+          parseCommand(messageOnly.substring(1, messageOnly.length()));
+
+        //Otherwise treat input as a regular chat message.
         } else {
           broadcastMessage(messageFromClient);
         }
@@ -131,5 +150,79 @@ public class ClientHandler implements Runnable {
 
   public String getClientUsername() {
     return this.clientUsername;
+  }
+
+  private void parseCommand(String input) {
+    String firstParam = "";
+    
+    if (input.indexOf(" ") == -1) {
+      firstParam = input;
+    } else {
+      firstParam = input.substring(0, input.indexOf(" "));
+    }
+    switch (firstParam) {
+      case "help":
+        cmdHelp();
+        break;
+
+      case "echo":
+        String echo = getNextCommandParameter(input);
+        cmdEcho("[SERVER] " + echo);
+        break;
+
+      case "who":
+        cmdWho();
+        break;
+      
+      default:
+        break;
+    }
+  }
+
+  private String getNextCommandParameter(String input) {
+    if (input != null) {
+      return input.substring((input.indexOf(" ") + 1), input.length());
+    } else {
+      return "null";
+    }
+  }
+
+  private void cmdHelp() {
+    cmdEcho("");
+    cmdEcho("Available Commands:");
+    cmdEcho(" /help           | Show this menu.");
+    cmdEcho(" /echo [message] | Server will reply back with [message].");
+    cmdEcho(" /who            | List all the people online.");
+    cmdEcho(" /leave          | Leave the chat.");
+    cmdEcho("");
+  }
+  
+  private void cmdEcho(String echo) {
+    try {
+      this.bufferedWriter.write(echo);
+      this.bufferedWriter.newLine();
+      this.bufferedWriter.flush();
+
+    } catch (IOException e) {
+      closeEverything(socket, bufferedReader, bufferedWriter);
+
+    }
+  }
+
+  private void cmdWho() {
+    cmdEcho("There are currently " + clientHandlers.size() + " people online:");
+
+    String currentlyOnline = "";
+
+    for (int i = 0; i < clientHandlers.size(); ++i) {
+      ClientHandler c = clientHandlers.get(i);
+      currentlyOnline += c.getClientUsername();
+
+      if (i != (clientHandlers.size() - 1)) {
+        currentlyOnline += ", ";
+      }
+    }
+
+    cmdEcho(currentlyOnline);
   }
 }

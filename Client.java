@@ -5,6 +5,8 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.IOException;
 import java.util.Scanner;
+import java.util.HashMap;
+import java.util.ArrayList;
 
 public class Client {
 
@@ -102,11 +104,27 @@ public class Client {
   }
 
   public static void main(String[] args) throws IOException {
+    HashMap<String, Boolean> forbiddenNames = new HashMap<String, Boolean>();
+    forbiddenNames.put("/help", true);
+    forbiddenNames.put("you", true);
+
     Scanner scnr = new Scanner(System.in);
 
-    System.out.println("Type '/leave' to exit the chat.");
     System.out.println("Enter your display name for the chat:");
     String username = scnr.nextLine();
+    
+    //Check if username is on the list of disallowed names.
+    while (forbiddenNames.get(username.toLowerCase()) != null) {
+      System.out.println("[ERROR] Invalid username. Enter another display name.");
+      username = scnr.nextLine();
+    }
+
+    ArrayList<String> allUsers = ClientHandler.getAllUsers();
+    
+    // if (allUsers.size() > 0) {
+      
+    // }
+
 
     Socket socket = new Socket("localhost", 4567);
     Client client = new Client(socket, username);
